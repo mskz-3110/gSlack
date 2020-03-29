@@ -6,28 +6,31 @@ function Cook( e, on_cook_sheet ){
     text: "<@"+ e.parameter.user_id +"> ",
     link_names: 1
   };
-  var lines = e.parameter.text.split( "\n" );
-  var action = lines.shift();
-  switch ( true ){
-  case /おしながき|お|し|な|が|き/.test( action ):{
-    var sheetNames = GetSheetNames();
-    payload.text += "どれにする？\n"+ sheetNames.join( "\n" );
-  }break;
-  
-  default:{
-    var sheetNames = GetSheetNames();
-    if ( 0 <= sheetNames.indexOf( action ) ){
-      var sheet = GetSheet( action );
-      payload = on_cook_sheet( payload, sheet, lines );
-    }else if ( 0 == lines.length ){
-      var spreadsheet_url = GetScriptProperty( "SPREADSHEET_URL" );
-      payload.text += action +"は品切れだよ！\n"+ spreadsheet_url;
-    }else{
-      return;
+  try{
+    var lines = e.parameter.text.split( "\n" );
+    var action = lines.shift();
+    switch ( true ){
+    case /おしながき|お|し|な|が|き/.test( action ):{
+      var sheetNames = GetSheetNames();
+      payload.text += "どれにする？\n"+ sheetNames.join( "\n" );
+    }break;
+    
+    default:{
+      var sheetNames = GetSheetNames();
+      if ( 0 <= sheetNames.indexOf( action ) ){
+        var sheet = GetSheet( action );
+        payload = on_cook_sheet( payload, sheet, lines );
+      }else if ( 0 == lines.length ){
+        var spreadsheet_url = GetScriptProperty( "SPREADSHEET_URL" );
+        payload.text += action +"は品切れだよ！\n"+ spreadsheet_url;
+      }else{
+        return;
+      }
+    }break;
     }
-  }break;
+  }catch ( error ){
+    payload.text += "エラー！\n```"+ error.stack +"```";
   }
-  
   SlackPost( payload );
 }
 
@@ -72,4 +75,8 @@ function SlackPost( payload ){
     contentType: "application/json",
     payload: JSON.stringify( payload )
   });
+}
+
+function UrlTrim( url ){
+  return url.replace( /^\</, "" ).replace( /\>$/, "" );
 }
